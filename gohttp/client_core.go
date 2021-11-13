@@ -7,12 +7,17 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
+)
+
+const (
+	defaultMaxIdConnections  = 5
+	defaultResponseTimeout   = 5 * time.Second
+	defaultConnectionTimeout = 1 * time.Second
 )
 
 //private method starts with lowercase
 func (c *httpClient) do(method string, url string, headers http.Header, body interface{}) (*http.Response, error) {
-	client := http.Client{}
-
 	fullHeaders := c.getRequestHeaders(headers)
 
 	requestBody, err := c.getRequestBody(fullHeaders.Get("Content-Type"), body)
@@ -27,9 +32,57 @@ func (c *httpClient) do(method string, url string, headers http.Header, body int
 
 	request.Header = fullHeaders
 
+	client := c.getHttpClient()
+
 	return client.Do(request)
 
 }
+
+func (c *httpClient) getHttpClient() *http.Client {
+	if c.client != nil {
+		return c.client
+	}
+
+	c.client = &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost:   c.getMaxIdleConnections(),
+			ResponseHeaderTimeout: c.getResponseTimeout(),
+			// DialContext: net.Dialer{
+			// 	Timeout: 1 * time.Second,
+			// }.DialContext,
+		},
+	}
+
+	return c.client
+}
+
+func (c *httpClient) getMaxIdleConnections() int {
+	if c.maxIdleConnections > 0 {
+		return c.maxIdleConnections
+	}
+
+	return defaultMaxIdConnections
+}
+
+func (c *httpClient) getResponseTimeout() time.Duration {
+	if c.responseTimeout > 0 {
+		return c.responseTimeout
+	}
+
+	if c.disableTimeouts {
+		return 0
+	}
+
+	return defaultResponseTimeout
+}
+
+// func (c *httpClient) getConnectionTimeout() time.Duration {
+// 	if c.connectionTimeout > 0 {
+// 		return c.connectionTimeout
+// 	}
+
+// 	return defaultConnectionTimeout
+// }
 
 func (c *httpClient) getRequestHeaders(requestHeaders http.Header) http.Header {
 	result := make(http.Header)
