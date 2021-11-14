@@ -11,6 +11,7 @@ type clientBuilder struct {
 	connectionTimeout  time.Duration
 	responseTimeout    time.Duration
 	disableTimeouts    bool
+	baseUrl            string
 }
 
 type ClientBuilder interface {
@@ -29,8 +30,10 @@ func NewBuilder() ClientBuilder {
 
 func (c *clientBuilder) Build() Client {
 	client := httpClient{
-		headers: c.headers,
+		builder: c,
 	}
+
+	return &client
 }
 
 func (c *clientBuilder) SetHeaders(headers http.Header) ClientBuilder {

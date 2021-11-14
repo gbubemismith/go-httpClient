@@ -39,37 +39,36 @@ func (c *httpClient) do(method string, url string, headers http.Header, body int
 }
 
 func (c *httpClient) getHttpClient() *http.Client {
-	if c.client != nil {
-		return c.client
-	}
 
-	c.client = &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost:   c.getMaxIdleConnections(),
-			ResponseHeaderTimeout: c.getResponseTimeout(),
-			// DialContext: net.Dialer{
-			// 	Timeout: 1 * time.Second,
-			// }.DialContext,
-		},
-	}
+	c.clientOnce.Do(func() {
+		c.client = &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost:   c.getMaxIdleConnections(),
+				ResponseHeaderTimeout: c.getResponseTimeout(),
+				// DialContext: net.Dialer{
+				// 	Timeout: 1 * time.Second,
+				// }.DialContext,
+			},
+		}
+	})
 
 	return c.client
 }
 
 func (c *httpClient) getMaxIdleConnections() int {
-	if c.maxIdleConnections > 0 {
-		return c.maxIdleConnections
+	if c.builder.maxIdleConnections > 0 {
+		return c.builder.maxIdleConnections
 	}
 
 	return defaultMaxIdConnections
 }
 
 func (c *httpClient) getResponseTimeout() time.Duration {
-	if c.responseTimeout > 0 {
-		return c.responseTimeout
+	if c.builder.responseTimeout > 0 {
+		return c.builder.responseTimeout
 	}
 
-	if c.disableTimeouts {
+	if c.builder.disableTimeouts {
 		return 0
 	}
 
@@ -88,7 +87,7 @@ func (c *httpClient) getRequestHeaders(requestHeaders http.Header) http.Header {
 	result := make(http.Header)
 
 	//Add common headers to request
-	for header, value := range c.Headers {
+	for header, value := range c.builder.headers {
 		if len(value) > 0 {
 			result.Set(header, value[0])
 		}
