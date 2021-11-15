@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/gbubemismith/go-httpClient/gohttp"
 )
@@ -35,18 +34,25 @@ func getUrls() {
 		panic(err)
 	}
 
-	fmt.Println(response.StatusCode)
-	bytes, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(bytes))
-}
-
-func createUser(user User) {
-	response, err := githubHttpClient.Post("https://api.github.com", nil, user)
-	if err != nil {
+	//using custom response
+	var user User
+	if err := response.UnmarshalJson(&user); err != nil {
 		panic(err)
 	}
 
-	fmt.Println(response.StatusCode)
-	bytes, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(bytes))
+	fmt.Println(response.Status())
+	fmt.Println(response.StatusCode())
+	fmt.Println(response.String())
+
 }
+
+// func createUser(user User) {
+// 	response, err := githubHttpClient.Post("https://api.github.com", nil, user)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	fmt.Println(response.StatusCode)
+// 	bytes, _ := ioutil.ReadAll(response.Body)
+// 	fmt.Println(string(bytes))
+// }
